@@ -1,12 +1,16 @@
-name: Build Android APK
+name: Build APK and Deploy Web
 
 on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  build-apk:
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +30,7 @@ jobs:
           channel: 'stable'
 
       - name: Recreate Android Project Files
-        run: flutter create . --platforms=android --org=com.example.fabulia
+        run: flutter create . --platforms=android --org=com.example.fabulia --project-name=fabulia
 
       - name: Install Dependencies
         run: flutter pub get
@@ -45,4 +49,36 @@ jobs:
         with:
           name: fabulia-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-web:
+    name: Build & Deploy Web
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'
+          channel: 'stable'
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Web
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          flutter build web --release --base-href "/${{ github.event.repository.name }}/" \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
           
