@@ -42818,7 +42818,7 @@ wJ(){var s=0,r=A.D(t.H),q=1,p,o=this,n,m,l,k
 var $async$wJ=A.E(function(a,b){if(a===1){p=b
 s=q}while(true)switch(s){case 0:q=3
 s=6
-return A.F(A.Gn($.oQ().gf8(),B.lj,"https://localalxeazixrjnjvhf.supabase.co/auth/v1/callback"),$async$wJ)
+return A.F(A.Gn($.oQ().gf8(),B.lj,"https://lucffernands07.github.io/fabulia_app/"),$async$wJ)
 case 6:q=1
 s=5
 break
