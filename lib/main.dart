@@ -14,7 +14,6 @@ void main() async {
     anonKey: supabaseAnonKey,
     authOptions: const FlutterAuthClientOptions(
       authFlowType: AuthFlowType.pkce,
-      detectSessionInUrl: true, // Captura os tokens do Google vindos na URL da Web
     ),
   );
 
