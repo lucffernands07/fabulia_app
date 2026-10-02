@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -40,7 +41,7 @@ class FabuliaApp extends StatelessWidget {
   }
 }
 
-// Direciona para a HomePage se logado, ou LoginPage se deslogado
+// Escuta as alterações de autenticação e navega automaticamente
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -49,7 +50,7 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<AuthState>(
       stream: supabase.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        final session = supabase.auth.currentSession;
+        final session = snapshot.data?.session ?? supabase.auth.currentSession;
         if (session != null) {
           return const HomePage();
         }
@@ -116,7 +117,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: 'https://lucffernands07.github.io/fabulia_app/',
+        redirectTo: kIsWeb ? 'https://lucffernands07.github.io/fabulia_app/' : null,
       );
     } catch (e) {
       if (mounted) {
