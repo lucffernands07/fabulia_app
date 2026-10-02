@@ -12,6 +12,9 @@ void main() async {
   await Supabase.initialize(
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+    ),
   );
 
   runApp(const FabuliaApp());
@@ -41,7 +44,6 @@ class FabuliaApp extends StatelessWidget {
   }
 }
 
-// Gerencia a navegação com base na sessão ativa do usuário
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
@@ -53,7 +55,7 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
-    // Escuta o retorno da autenticação (especialmente no Flutter Web ao ler tokens da URL)
+    // Escuta mudanças no AuthState e força a renderização
     supabase.auth.onAuthStateChange.listen((data) {
       if (mounted) {
         setState(() {});
@@ -128,7 +130,9 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: kIsWeb ? 'https://lucffernands07.github.io/fabulia_app/' : null,
+        redirectTo: kIsWeb 
+            ? 'https://lucffernands07.github.io/fabulia_app/' 
+            : null,
       );
     } catch (e) {
       if (mounted) {
@@ -260,42 +264,65 @@ class HomePage extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF5E4),
-      appBar: AppBar(
-        title: const Text('FabuliA'),
-        backgroundColor: const Color(0xFFFF9EAA),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async => await supabase.auth.signOut(),
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Bem-vindo, ${user?.email ?? 'Usuário'}!',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.add),
-              label: const Text('Criar Nova História'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF9EAA),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.auto_stories_rounded,
+                size: 80,
+                color: Color(0xFFFF9EAA),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'FabuliA',
+                style: GoogleFonts.fredoka(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF4A4E69),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                'Histórias mágicas personalizadas',
+                style: GoogleFonts.fredoka(
+                  fontSize: 18,
+                  color: const Color(0xFF8D99AE),
+                ),
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.add, size: 24),
+                label: const Text(
+                  'Criar Nova História',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF9EAA),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  elevation: 2,
+                ),
+              ),
+              const SizedBox(height: 30),
+              TextButton.icon(
+                onPressed: () async => await supabase.auth.signOut(),
+                icon: const Icon(Icons.logout, color: Colors.grey),
+                label: const Text(
+                  'Sair da conta',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
