@@ -116,7 +116,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: 'https://localalxeazixrjnjvhf.supabase.co/auth/v1/callback',
+        redirectTo: 'https://lucffernands07.github.io/fabulia_app/',
       );
     } catch (e) {
       if (mounted) {
