@@ -42752,7 +42752,8 @@ A.E3.prototype={
 N(a){var s=$.oQ().gf8().as
 return new A.yC(new A.Ud(),new A.h0(s,s.$ti.i("h0<1>")),null,t.Lh)}}
 A.Ud.prototype={
-$2(a,b){if($.oQ().gf8().c!=null)return B.Dt
+$2(a,b){var s=b.b,r=s==null?null:s.b
+if((r==null?$.oQ().gf8().c:r)!=null)return B.Dt
 return B.Hf},
 $S:321}
 A.ws.prototype={
