@@ -8636,7 +8636,7 @@ var $async$aiQ=A.E(function(a,b){if(a===1)return A.A(b,r)
 while(true)switch(s){case 0:if($.ab==null)A.alj()
 $.ab.toString
 s=2
-return A.F(A.a7X("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvY2FsYWx4ZWF6aXhyam5qdmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2OTUxNjQsImV4cCI6MjEwNjI3MTE2NH0.4yG9UZ53HuCEU7WKbLTTuZufEOOIjygFuD1vq3NaXZ4","https://localalxeazixrjnjvhf.supabase.co/rest/v1/"),$async$aiQ)
+return A.F(A.a7X("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxvY2FsYWx4ZWF6aXhyam5qdmhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2OTUxNjQsImV4cCI6MjEwNjI3MTE2NH0.4yG9UZ53HuCEU7WKbLTTuZufEOOIjygFuD1vq3NaXZ4","https://localalxeazixrjnjvhf.supabase.co"),$async$aiQ)
 case 2:if($.ab==null)A.alj()
 q=$.ab
 q.toString
