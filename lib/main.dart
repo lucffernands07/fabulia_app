@@ -44,21 +44,31 @@ class FabuliaApp extends StatelessWidget {
   }
 }
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
   @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  @override
+  void initState() {
+    super.initState();
+    supabase.auth.onAuthStateChange.listen((data) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<AuthState>(
-      stream: supabase.auth.onAuthStateChange,
-      builder: (context, snapshot) {
-        final session = supabase.auth.currentSession;
-        if (session != null) {
-          return const HomePage();
-        }
-        return const LoginPage();
-      },
-    );
+    final session = supabase.auth.currentSession;
+    if (session != null) {
+      return const HomePage();
+    }
+    return const LoginPage();
   }
 }
 
@@ -118,10 +128,11 @@ class _LoginPageState extends State<LoginPage> {
       await supabase.auth.signUp(
         email: email,
         password: password,
+        emailRedirectTo: 'https://lucffernands07.github.io/fabulia_app/',
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Conta criada! Verifique seu e-mail.')),
+          const SnackBar(content: Text('Conta criada! Verifique seu e-mail para confirmar.')),
         );
       }
     } catch (e) {
