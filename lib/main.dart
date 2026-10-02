@@ -14,6 +14,7 @@ void main() async {
     anonKey: supabaseAnonKey,
     authOptions: const FlutterAuthClientOptions(
       authFlowType: AuthFlowType.pkce,
+      detectSessionInUrl: true, // Captura os tokens do Google vindos na URL da Web
     ),
   );
 
@@ -44,32 +45,21 @@ class FabuliaApp extends StatelessWidget {
   }
 }
 
-class AuthGate extends StatefulWidget {
+class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
   @override
-  State<AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<AuthGate> {
-  @override
-  void initState() {
-    super.initState();
-    // Escuta mudanças no AuthState e força a renderização
-    supabase.auth.onAuthStateChange.listen((data) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final session = supabase.auth.currentSession;
-    if (session != null) {
-      return const HomePage();
-    }
-    return const LoginPage();
+    return StreamBuilder<AuthState>(
+      stream: supabase.auth.onAuthStateChange,
+      builder: (context, snapshot) {
+        final session = supabase.auth.currentSession;
+        if (session != null) {
+          return const HomePage();
+        }
+        return const LoginPage();
+      },
+    );
   }
 }
 
@@ -86,11 +76,21 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
   Future<void> _signInWithEmail() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, preencha e-mail e senha.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       await supabase.auth.signInWithPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        email: email,
+        password: password,
       );
     } catch (e) {
       if (mounted) {
@@ -104,15 +104,25 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _signUpWithEmail() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, informe e-mail e senha.')),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       await supabase.auth.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        email: email,
+        password: password,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Conta criada com sucesso!')),
+          const SnackBar(content: Text('Conta criada! Verifique seu e-mail.')),
         );
       }
     } catch (e) {
@@ -130,9 +140,7 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: kIsWeb 
-            ? 'https://lucffernands07.github.io/fabulia_app/' 
-            : null,
+        redirectTo: kIsWeb ? 'https://lucffernands07.github.io/fabulia_app/' : null,
       );
     } catch (e) {
       if (mounted) {
@@ -171,6 +179,7 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 30),
                 TextField(
                   controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: 'E-mail',
                     filled: true,
@@ -260,8 +269,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = supabase.auth.currentUser;
-
     return Scaffold(
       backgroundColor: const Color(0xFFFFF5E4),
       body: SafeArea(
