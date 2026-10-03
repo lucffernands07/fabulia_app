@@ -35,7 +35,6 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # RECUPERA A CHAVE VIA SECRETS E PREPARA PARA O COMPILADOR GRADLE
       - name: Decode Android Keystore
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -44,12 +43,15 @@ jobs:
         run: |
           mkdir -p ~/.android
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/debug.keystore
-          # 1. Altera a senha da keystore para o padrão do Gradle usando a Secret
           keytool -storepasswd -new android -keystore ~/.android/debug.keystore -storepass "$KEYSTORE_PASSWORD"
-          # 2. Altera a senha do alias interno usando a Secret
           keytool -keypasswd -alias "$KEY_ALIAS" -new android -keypass "$KEY_PASSWORD" -keystore ~/.android/debug.keystore -storepass android || true
-          # 3. Mapeia a etiqueta ($KEY_ALIAS) para a etiqueta esperada pelo Gradle (androiddebugkey)
           keytool -changealias -alias "$KEY_ALIAS" -destalias androiddebugkey -keystore ~/.android/debug.keystore -storepass android || true
+
+      # PASSO NOVO: MOSTRA A SHA-1 EXATA NO LOG DA ACTION
+      - name: Print Keystore SHA-1
+        run: |
+          cd android
+          ./gradlew signingReport
 
       - name: Build APK
         env:
