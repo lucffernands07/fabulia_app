@@ -1,10 +1,31 @@
+import 'dart:html' as html; // Import nativo da Web no Flutter
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+void _injectEruda() {
+  if (kIsWeb) {
+    // Injeta o script do Eruda no HTML da página dinamicamente
+    final script = html.ScriptElement()
+      ..src = 'https://cdn.jsdelivr.net/npm/eruda'
+      ..type = 'text/javascript';
+
+    script.onLoad.listen((_) {
+      html.querySelector('body')?.children.add(
+        html.ScriptElement()..innerHtml = 'eruda.init();',
+      );
+    });
+
+    html.document.head?.children.add(script);
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Ativa o console Eruda
+  _injectEruda();
 
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
@@ -12,8 +33,8 @@ void main() async {
   await Supabase.initialize(
     url: supabaseUrl,
     anonKey: supabaseAnonKey,
-    authOptions: const FlutterAuthClientOptions(
-      authFlowType: AuthFlowType.pkce,
+    authOptions: FlutterAuthClientOptions(
+      authFlowType: kIsWeb ? AuthFlowType.implicit : AuthFlowType.pkce,
     ),
   );
 
