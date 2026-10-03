@@ -35,10 +35,12 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # PASSO PARA IMPRIMIR O SHA-1 DA CHAVE DO GITHUB ACTIONS
+      # PASSO PARA GERAR E IMPRIMIR O SHA-1 DA CHAVE DO GITHUB ACTIONS
       - name: Print Android Keystore SHA-1
         run: |
-          keytool -list -v -alias androiddebugkey -keystore ~/.android/debug.keystore -storepass android -keypass android | grep "SHA1:" || true
+          mkdir -p ~/.android
+          keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US" || true
+          keytool -list -v -alias androiddebugkey -keystore ~/.android/debug.keystore -storepass android -keypass android | grep "SHA1:"
 
       - name: Build APK
         env:
