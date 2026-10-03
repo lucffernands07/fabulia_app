@@ -9,27 +9,92 @@ permissions:
   contents: write
 
 jobs:
-  generate-key:
-    name: Generate Secure Keystore
+  build-apk:
+    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Generate Keystore & Print Secure Output
-        env:
-          KEY_PASS: ${{ secrets.KEYSTORE_PASSWORD || 'FabuliaKey2026Secure!' }}
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'
+          channel: 'stable'
+
+      - name: Recreate Android Project Files
+        run: flutter create . --platforms=android --org=com.example.fabulia --project-name=fabulia
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # RECUPERA A CHAVE FIXA SALVA NAS SECRETS
+      - name: Decode Android Keystore
         run: |
-          echo "::add-mask::$KEY_PASS"
-          keytool -genkeypair -v -keystore release.jks -alias fabulia -keyalg RSA -keysize 2048 -validity 10000 -storepass "$KEY_PASS" -keypass "$KEY_PASS" -dname "CN=Fabulia, O=Fabulia, C=BR"
-          
-          echo "--- COPIE O SHA1 ABAIXO PARA O GOOGLE CLOUD ---"
-          keytool -list -v -keystore release.jks -alias fabulia -storepass "$KEY_PASS" | grep "SHA1:"
-          echo "-----------------------------------------------"
-          
-          echo "--- COPIE O BASE64 ABAIXO PARA A SECRET ANDROID_KEYSTORE_BASE64 ---"
-          base64 -w 0 release.jks
-          echo ""
-          echo "-------------------------------------------------------------------"
+          mkdir -p ~/.android
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/debug.keystore
+
+      - name: Build APK
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+        run: |
+          flutter build apk --release \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+            --dart-define=GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: fabulia-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-web:
+    name: Build & Deploy Web
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'
+          channel: 'stable'
+
+      - name: Recreate Web Project Files
+        run: flutter create . --platforms=web --project-name=fabulia
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Web
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
+        run: |
+          flutter build web --release --base-href "/${{ github.event.repository.name }}/" \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+            --dart-define=GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID
+
+      - name: Copy index.html to 404.html (Fix GitHub Pages SPA Routing)
+        run: cp build/web/index.html build/web/404.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
           
