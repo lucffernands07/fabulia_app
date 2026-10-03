@@ -1,4 +1,4 @@
-import 'dart:html' as html; // Import nativo da Web no Flutter
+import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,7 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 void _injectEruda() {
   if (kIsWeb) {
-    // Injeta o script do Eruda no HTML da página dinamicamente
     final script = html.ScriptElement()
       ..src = 'https://cdn.jsdelivr.net/npm/eruda'
       ..type = 'text/javascript';
@@ -24,7 +23,6 @@ void _injectEruda() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Ativa o console Eruda
   _injectEruda();
 
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -65,31 +63,58 @@ class FabuliaApp extends StatelessWidget {
   }
 }
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
   @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _isLoading = true;
+  Session? _session;
+
+  @override
+  void initState() {
+    super.initState();
+    _recoverSession();
+
+    supabase.auth.onAuthStateChange.listen((data) {
+      if (mounted) {
+        setState(() {
+          _session = data.session;
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  Future<void> _recoverSession() async {
+    await Future.delayed(Duration.zero);
+    if (mounted) {
+      setState(() {
+        _session = supabase.auth.currentSession;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return StreamBuilder<AuthState>(
-      stream: supabase.auth.onAuthStateChange,
-      builder: (context, snapshot) {
-        // Exibe loading enquanto o Supabase processa a URL/sessão
-        if (snapshot.connectionState == ConnectionState.waiting &&
-            !snapshot.hasData) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFFF5E4),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFFF9EAA)),
+        ),
+      );
+    }
 
-        final session = snapshot.data?.session ?? supabase.auth.currentSession;
+    if (_session != null) {
+      return const HomePage();
+    }
 
-        if (session != null) {
-          return const HomePage();
-        }
-
-        return const LoginPage();
-      },
-    );
+    return const LoginPage();
   }
 }
 
