@@ -44,31 +44,31 @@ class FabuliaApp extends StatelessWidget {
   }
 }
 
-class AuthGate extends StatefulWidget {
+class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
   @override
-  State<AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<AuthGate> {
-  @override
-  void initState() {
-    super.initState();
-    supabase.auth.onAuthStateChange.listen((data) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final session = supabase.auth.currentSession;
-    if (session != null) {
-      return const HomePage();
-    }
-    return const LoginPage();
+    return StreamBuilder<AuthState>(
+      stream: supabase.auth.onAuthStateChange,
+      builder: (context, snapshot) {
+        // Exibe loading enquanto o Supabase processa a URL/sessão
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final session = snapshot.data?.session ?? supabase.auth.currentSession;
+
+        if (session != null) {
+          return const HomePage();
+        }
+
+        return const LoginPage();
+      },
+    );
   }
 }
 
@@ -132,7 +132,9 @@ class _LoginPageState extends State<LoginPage> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Conta criada! Verifique seu e-mail para confirmar.')),
+          const SnackBar(
+              content:
+                  Text('Conta criada! Verifique seu e-mail para confirmar.')),
         );
       }
     } catch (e) {
