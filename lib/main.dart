@@ -1,29 +1,18 @@
-import 'dart:html' as html;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void _injectEruda() {
-  if (kIsWeb) {
-    final script = html.ScriptElement()
-      ..src = 'https://cdn.jsdelivr.net/npm/eruda'
-      ..type = 'text/javascript';
-
-    script.onLoad.listen((_) {
-      html.querySelector('body')?.children.add(
-        html.ScriptElement()..innerHtml = 'eruda.init();',
-      );
-    });
-
-    html.document.head?.children.add(script);
-  }
-}
+// Importação condicional: evita que o dart:html quebre a compilação do APK
+import 'eruda_stub.dart' if (dart.library.html) 'eruda_web.dart' as eruda;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  _injectEruda();
+  if (kIsWeb) {
+    eruda.injectEruda();
+  }
 
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
@@ -179,8 +168,8 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content:
-                  Text('Conta criada! Verifique seu e-mail para confirmar.')),
+            content: Text('Conta criada! Verifique seu e-mail para confirmar.'),
+          ),
         );
       }
     } catch (e) {
@@ -195,17 +184,41 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
     try {
-      await supabase.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: kIsWeb ? 'https://lucffernands07.github.io/fabulia_app/' : null,
-      );
+      if (kIsWeb) {
+        await supabase.auth.signInWithOAuth(
+          OAuthProvider.google,
+          redirectTo: 'https://lucffernands07.github.io/fabulia_app/',
+        );
+      } else {
+        // Login Nativo para Android (APK)
+        const webClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+
+        final googleSignIn = GoogleSignIn(
+          serverClientId: webClientId.isNotEmpty ? webClientId : null,
+        );
+        final googleUser = await googleSignIn.signIn();
+        final googleAuth = await googleUser?.authentication;
+
+        if (googleAuth?.idToken == null || googleAuth?.accessToken == null) {
+          throw 'Não foi possível obter a autenticação do Google.';
+        }
+
+        await supabase.auth.signInWithIdToken(
+          provider: OAuthProvider.google,
+          idToken: googleAuth!.idToken!,
+          accessToken: googleAuth.accessToken,
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erro ao logar com Google: ${e.toString()}')),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
