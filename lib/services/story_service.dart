@@ -1,14 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../main.dart';
 
 class StoryService {
-  final SupabaseClient _supabase = Supabase.instance.client;
-
   Future<String> generateStory({
     required String childName,
     required String theme,
   }) async {
-    // Chama a Supabase Edge Function ou faz chamada direta via HTTP/Function
-    final response = await _supabase.functions.invoke(
+    final response = await supabase.functions.invoke(
       'generate-story',
       body: {
         'child_name': childName,
