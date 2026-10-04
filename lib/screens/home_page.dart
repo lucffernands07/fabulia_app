@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../main.dart';
 import '../services/story_service.dart';
 
 class HomePage extends StatefulWidget {
@@ -20,7 +20,7 @@ class _HomePageState extends State<HomePage> {
     try {
       final story = await _storyService.generateStory(
         childName: 'Lucas',
-        theme: 'uma grande aventura na floresta mágica com um dragão amigo',
+        theme: 'uma aventura no espaço com um dragão amigo',
       );
 
       if (!mounted) return;
@@ -46,7 +46,7 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro no teste da IA: ${e.toString()}')),
+        SnackBar(content: Text('Erro ao gerar história: ${e.toString()}')),
       );
     } finally {
       if (mounted) setState(() => _isGenerating = false);
@@ -118,7 +118,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 const SizedBox(height: 30),
                 TextButton.icon(
-                  onPressed: () async => await Supabase.instance.client.auth.signOut(),
+                  onPressed: () async => await supabase.auth.signOut(),
                   icon: const Icon(Icons.logout, color: Colors.grey),
                   label: const Text(
                     'Sair da conta',
