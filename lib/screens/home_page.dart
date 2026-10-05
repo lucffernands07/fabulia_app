@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../main.dart';
 import '../services/story_service.dart';
 
@@ -12,15 +14,200 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _storyService = StoryService();
-  bool _isGenerating = false;
+  final _nameController = TextEditingController();
 
-  Future<void> _testAIGeneration() async {
+  bool _isGenerating = false;
+  File? _selectedImage;
+  String _selectedFable = 'Chapeuzinho Vermelho';
+
+  final List<String> _fablesList = [
+    'Chapeuzinho Vermelho',
+    'Os Três Porquinhos',
+    'Cinderela',
+    'O Gato de Botas',
+  ];
+
+  // Modal com o formulário de 4 passos
+  void _showPersonalizeModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                top: 24,
+                left: 24,
+                right: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAlignment.stretch,
+                children: [
+                  Text(
+                    'Personalizar Fábula 🪄',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.fredoka(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF4A4E69),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // 1. Nome do personagem
+                  TextField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: '1. Nome do(a) personagem',
+                      hintText: 'Ex: Diana',
+                      prefixIcon: const Icon(Icons.face_rounded, color: Color(0xFFFF9EAA)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 2. Enviar foto do rosto
+                  InkWell(
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final image = await picker.pickImage(source: ImageSource.gallery);
+                      if (image != null) {
+                        setModalState(() {
+                          _selectedImage = File(image.path);
+                        });
+                        setState(() {});
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          _selectedImage != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.file(
+                                    _selectedImage!,
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.add_a_photo_rounded,
+                                  size: 32,
+                                  color: Color(0xFFFF9EAA),
+                                ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _selectedImage != null
+                                  ? 'Foto carregada com sucesso!'
+                                  : '2. Enviar foto do rosto',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: _selectedImage != null ? Colors.green : Colors.black87,
+                                fontWeight: _selectedImage != null ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 3. Escolher a fábula
+                  DropdownButtonFormField<String>(
+                    value: _selectedFable,
+                    decoration: InputDecoration(
+                      labelText: '3. Escolher a fábula',
+                      prefixIcon: const Icon(Icons.auto_stories_rounded, color: Color(0xFFFF9EAA)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    items: _fablesList.map((fable) {
+                      return DropdownMenuItem(
+                        value: fable,
+                        child: Text(fable),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setModalState(() => _selectedFable = value);
+                        setState(() => _selectedFable = value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 4. Botão Gerar Fábula
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _generateFable();
+                    },
+                    icon: const Icon(Icons.auto_awesome, size: 22),
+                    label: const Text(
+                      '4. Gerar Fábula',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF9EAA),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _generateFable() async {
+    final name = _nameController.text.trim();
+
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, digite o nome do personagem.')),
+      );
+      return;
+    }
+
+    if (_selectedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Por favor, selecione uma foto do rosto.')),
+      );
+      return;
+    }
+
     setState(() => _isGenerating = true);
 
     try {
+      // Passagem dos parâmetros para o StoryService
       final story = await _storyService.generateStory(
-        childName: 'Lucas',
-        theme: 'uma aventura no espaço com um dragão amigo',
+        childName: name,
+        theme: _selectedFable,
       );
 
       if (!mounted) return;
@@ -29,7 +216,7 @@ class _HomePageState extends State<HomePage> {
         context: context,
         builder: (_) => AlertDialog(
           title: Text(
-            '✨ História Mágica',
+            '✨ Fábula de $name',
             style: GoogleFonts.fredoka(fontWeight: FontWeight.bold),
           ),
           content: SingleChildScrollView(
@@ -46,7 +233,7 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao gerar história: ${e.toString()}')),
+        SnackBar(content: Text('Erro ao gerar fábula: ${e.toString()}')),
       );
     } finally {
       if (mounted) setState(() => _isGenerating = false);
@@ -92,44 +279,14 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       CircularProgressIndicator(color: Color(0xFFFF9EAA)),
                       SizedBox(height: 15),
-                      Text('A IA está criando a história... 🪄'),
+                      Text('Criando a fábula com a personagem... 🪄'),
                     ],
                   )
                 else
                   ElevatedButton.icon(
-                    onPressed: _testAIGeneration,
+                    onPressed: _showPersonalizeModal,
                     icon: const Icon(Icons.auto_awesome, size: 24),
                     label: const Text(
-                      'Testar Geração de História',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFF9EAA),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 16,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 2,
-                    ),
-                  ),
-                const SizedBox(height: 30),
-                TextButton.icon(
-                  onPressed: () async => await supabase.auth.signOut(),
-                  icon: const Icon(Icons.logout, color: Colors.grey),
-                  label: const Text(
-                    'Sair da conta',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+                      'Personalizar História',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight
+                                       
