@@ -27,7 +27,6 @@ class _HomePageState extends State<HomePage> {
     'O Gato de Botas',
   ];
 
-  // Modal com o formulário de 4 passos
   void _showPersonalizeModal() {
     showModalBottomSheet(
       context: context,
@@ -48,7 +47,7 @@ class _HomePageState extends State<HomePage> {
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     'Personalizar Fábula 🪄',
@@ -204,7 +203,6 @@ class _HomePageState extends State<HomePage> {
     setState(() => _isGenerating = true);
 
     try {
-      // Passagem dos parâmetros para o StoryService
       final story = await _storyService.generateStory(
         childName: name,
         theme: _selectedFable,
@@ -288,5 +286,35 @@ class _HomePageState extends State<HomePage> {
                     icon: const Icon(Icons.auto_awesome, size: 24),
                     label: const Text(
                       'Personalizar História',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight
-                                       
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF9EAA),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      elevation: 2,
+                    ),
+                  ),
+                const SizedBox(height: 30),
+                TextButton.icon(
+                  onPressed: () async => await supabase.auth.signOut(),
+                  icon: const Icon(Icons.logout, color: Colors.grey),
+                  label: const Text(
+                    'Sair da conta',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
